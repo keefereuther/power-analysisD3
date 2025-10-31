@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistical Power Analysis</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jstat@1.9.5/dist/jstat.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Title Panel -->
+        <div class="title-panel">
+            <h2 class="app-title">Statistical Power Analysis</h2>
+            <h4 class="app-subtitle">Interactive tool for understanding statistical power and sample size</h4>
+            <hr>
+            <h5 class="app-subtitle">
+                Developed by <a href="https://reutherlab.netlify.app" target="_blank">Keefe Reuther</a>
+            </h5>
+        </div>
+
+        <!-- Instructions -->
+        <div class="guiding-questions">
+            <h4>Instructions</h4>
+            <p>By modifying a single parameter and keeping all other parameters constant, you can infer how that parameter affects power.</p>
+        </div>
+
+        <!-- Guiding Questions -->
+        <div class="guiding-questions">
+            <h4>Guiding Questions</h4>
+            <p>1. What happens to power as sample size increases? Why?</p>
+            <p>2. What sample size do we need to achieve a power of 0.8 with a standard deviation of 1, a difference in means of 0.5, and an alpha of 0.05?</p>
+            <p>3. How does sample size change in the above scenario if we changed our alpha to 0.0001? Why?</p>
+            <p>4. What happens to the sample size necessary to achieve a 0.80 power if we switch to a one-tailed test? Why don't we always use a one-tailed test?</p>
+            <p>5. How does increasing the effect size affect the power of the test? Why is effect size an important factor?</p>
+            <p>6. How does changing the significance level (α) affect both the probability of a Type I error and the power of the test? What trade-offs are involved?</p>
+            <p>7. Why do you think power increases when you switch from a two-sample t-test to a paired t-test?</p>
+        </div>
+
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Basic Settings - Consolidating all settings here -->
+                <div class="sidebar-section">
+                    <h3 class="section-header collapsible">Basic Settings <span class="toggle-icon">▼</span></h3>
+                    <div class="section-content">
+                        <!-- Test Type -->
+                        <div class="compact-setting">
+                            <label for="test_type">Test Type</label>
+                            <select id="test_type" class="form-control compact-input">
+                                <option value="two_sample">Two-sample t-test</option>
+                                <!-- <option value="paired">Paired t-test</option> -->
+                                <!-- <option value="anova">One-way ANOVA</option> -->
+                                <!-- <option value="regression">Linear Regression</option> -->
+                            </select>
+                        </div>
+
+                        <!-- Sample Size -->
+                        <div class="compact-setting">
+                            <label for="n">Sample Size (n)</label>
+                            <input type="number" id="n" class="form-control compact-input" min="2" max="1000" value="30" step="1">
+                        </div>
+
+                        <!-- Significance Level -->
+                        <div class="compact-setting">
+                            <label for="alpha">Significance Level (α)</label>
+                            <input type="number" id="alpha" class="form-control compact-input" min="0.001" max="0.5" value="0.05" step="0.01">
+                        </div>
+
+                        <!-- Effect Size -->
+                        <div class="compact-setting">
+                            <label for="effect_size_ttest">Effect Size (Cohen's d)</label>
+                            <input type="number" id="effect_size_ttest" class="form-control compact-input" min="0.1" max="2" value="0.5" step="0.1">
+                        </div>
+
+                        <!-- Test Direction -->
+                        <div class="compact-setting">
+                            <label>
+                                <input type="checkbox" id="one_tailed">
+                                One-tailed test
+                            </label>
+                        </div>
+
+                        <!-- Power Calculator -->
+                        <hr class="compact-divider">
+                        <div class="compact-setting">
+                            <label for="target_power">Target Power (1-β)</label>
+                            <input type="number" id="target_power" class="form-control compact-input" min="0.1" max="0.99" value="0.8" step="0.05">
+                        </div>
+                        <button id="calculate_n" class="btn btn-primary compact-btn">Find Required Sample Size</button>
+                        <p id="sample_size_result" class="result-text compact-result"></p>
+                    </div>
+                </div>
+
+                <!-- ANOVA Settings (hidden, kept for functionality) -->
+                <div class="sidebar-section" id="anova-settings" style="display: none;">
+                    <h3 class="section-header">ANOVA Settings</h3>
+                    
+                    <div class="subsection-focus">
+                        <h4 class="subsection-header">Groups</h4>
+                        <label for="k">k</label>
+                        <input type="number" id="k" class="form-control" min="2" max="20" value="3" step="1">
+                        <p class="help-text">Number of groups to compare</p>
+                    </div>
+
+                    <div class="subsection-focus">
+                        <h4 class="subsection-header">Effect Size (Cohen's f)</h4>
+                        <label for="effect_size_anova">Effect Size (Cohen's f):</label>
+                        <input type="number" id="effect_size_anova" class="form-control" min="0.1" max="2" value="0.25" step="0.05">
+                        <p class="help-text">Typical values: small: 0.1, medium: 0.25, large: 0.4</p>
+                    </div>
+                </div>
+
+                <!-- Regression Settings (hidden, kept for functionality) -->
+                <div class="sidebar-section" id="regression-settings" style="display: none;">
+                    <h3 class="section-header">Regression Settings</h3>
+                    
+                    <div class="subsection-focus">
+                        <h4 class="subsection-header">Predictors</h4>
+                        <label for="predictors">Number</label>
+                        <input type="number" id="predictors" class="form-control" min="1" max="50" value="2" step="1">
+                        <p class="help-text">Count of independent variables</p>
+                    </div>
+
+                    <div class="subsection-focus">
+                        <h4 class="subsection-header">Effect Size</h4>
+                        <label for="r2">R²</label>
+                        <input type="number" id="r2" class="form-control" min="0.01" max="0.99" value="0.2" step="0.01">
+                        <p class="help-text">0.02 = small, 0.13 = medium, 0.26 = large</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Panel -->
+            <div class="main-panel">
+                <!-- Power Analysis Results -->
+                <div class="output-section">
+                    <h3 class="section-header collapsible collapsed">Power Analysis Results <span class="toggle-icon">▼</span></h3>
+                    <div class="section-content collapsed">
+                        <div id="solutionText" class="result-text preformatted"></div>
+                    </div>
+                </div>
+
+                <!-- Test Distribution Visualization -->
+                <div class="output-section">
+                    <h3 class="section-header collapsible">Test Statistic Distribution <span class="toggle-icon">▼</span></h3>
+                    <div class="section-content">
+                        <div id="plotDistribution"></div>
+                    </div>
+                </div>
+
+                <!-- Power Curve -->
+                <div class="output-section">
+                    <h3 class="section-header collapsible collapsed">Power Curve <span class="toggle-icon">▼</span></h3>
+                    <div class="section-content collapsed">
+                        <div id="plotCombined"></div>
+                    </div>
+                </div>
+
+                <!-- Sample Data Visualization -->
+                <div class="output-section">
+                    <h3 class="section-header collapsible collapsed">Sample Data Visualization <span class="toggle-icon">▼</span></h3>
+                    <div class="section-content collapsed">
+                        <div id="plotData"></div>
+                    </div>
+                </div>
+
+
+                <!-- Footer -->
+                <hr class="footer-divider">
+                <p class="footer">
+                    &copy; 2025 Reuther Lab • 
+                    <a href="https://reutherlab.netlify.app" target="_blank">reutherlab.netlify.app</a> • 
+                    Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank">GNU GPL v3.0</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/statistics.js"></script>
+    <script src="js/dataGeneration.js"></script>
+    <script src="js/visualizations.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+
